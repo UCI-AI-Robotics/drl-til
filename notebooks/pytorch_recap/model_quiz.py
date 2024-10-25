@@ -28,7 +28,10 @@ class NeuralNetwork(nn.Module):
         return output
 
 model = NeuralNetwork().to(device)
-print(model)
+
+print(f"Model structure: {model}\n\n")
+for name, param in model.named_parameters():
+    print(f"Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n")
 
 X = torch.rand(1, 28, 28, device=device)
 model_output = model(X)
