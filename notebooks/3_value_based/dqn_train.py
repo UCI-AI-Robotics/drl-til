@@ -86,7 +86,7 @@ def train(Qnet, Qnet_target, buffer, optim):
         q_out = Qnet(s)
         q_pred = q_out.gather(1, a)
 
-        q_target_out = Qnet_target(s_prime)
+        q_target_out = Qnet_target(s_prime).detach()
         q_target_pred = r + gamma * q_target_out.max(1)[0].unsqueeze(1) * dm
 
         loss = F.smooth_l1_loss(q_pred, q_target_pred)
@@ -111,6 +111,7 @@ optimizer = optim.Adam(q.parameters(), lr=learning_rate)
 target_update_interval = 20
 print_interval = 100
 epoch = 5000
+tau = 1e-3
 
 tmp_scores = deque(maxlen=print_interval)     # deque for keeping track of scores
 avg_scores = deque(maxlen=epoch)   # average scores over every plot_every episodes
@@ -139,6 +140,9 @@ for i in range(epoch):
     
     if i % target_update_interval == 0 :
         q_target.load_state_dict(q.state_dict())
+        # # Soft update
+        # for target_param, local_param in zip(q_target.parameters(), q.parameters()):
+        #     target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
     if i % print_interval == 0 and i != 0:
         avg_score = np.mean(tmp_scores)

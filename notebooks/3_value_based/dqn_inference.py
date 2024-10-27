@@ -49,7 +49,7 @@ class Qnet(nn.Module):
             return pred.argmax().item()
 
 # load model
-model_path = "dqn_20241027_140627.pth"
+model_path = "dqn_20241027_143435.pth"
 q = Qnet().to(device)
 q.load_state_dict(torch.load(model_path))
 
