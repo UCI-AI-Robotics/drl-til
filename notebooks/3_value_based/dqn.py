@@ -1,4 +1,6 @@
+from matplotlib import pyplot as plt
 import gymnasium as gym
+import numpy as np
 import collections
 import random
 
@@ -7,8 +9,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-learning_rate = 0.0005
-gamma         = 0.98
+# learning_rate = 0.005
+learning_rate = 0.001
+gamma         = 0.99
 buffer_limit  = 50000
 batch_size    = 32
 
@@ -38,8 +41,10 @@ class ReplayBuffer():
             s_prime_list.append(s_prime)
             done_list.append([dm])
 
-        return torch.tensor(s_list, dtype=torch.float).to(device), torch.tensor(a_list).to(device), \
-               torch.tensor(r_list).to(device), torch.tensor(s_prime_list, dtype=torch.float).to(device), \
+        # Warning : Creating a tensor from a list of numpy.ndarrays is extremely slow. 
+        # Please consider converting the list to a single numpy.ndarray
+        return torch.tensor(np.array(s_list), dtype=torch.float).to(device), torch.tensor(a_list).to(device), \
+               torch.tensor(r_list).to(device), torch.tensor(np.array(s_prime_list), dtype=torch.float).to(device), \
                torch.tensor(done_list).to(device)
     
     def size(self):
@@ -105,8 +110,12 @@ target_update_interval = 20
 print_interval = 100
 epoch = 5000
 
+score_list = []
+
 for i in range(epoch):
-    epsilon = 1.0 / (i + 1)
+    # epsilon = 1.0 / (i + 1)
+    epsilon = max(0.01, 0.08 - 0.01*(i/200)) #Linear annealing from 8% to 1%
+
     s, _ = env.reset()
     score = 0.0
 
@@ -121,15 +130,20 @@ for i in range(epoch):
         if done or truncated:
             break
 
-        if memory.size() > 2000:
-            train(q, q_target, memory, optimizer)
-        
-        if i % target_update_interval == 0 :
-            q_target.load_state_dict(q.state_dict())
+    if memory.size() > 2000:
+        train(q, q_target, memory, optimizer)
+    
+    if i % target_update_interval == 0 :
+        q_target.load_state_dict(q.state_dict())
 
-        if i % print_interval == 0 and i != 0:
-            print("n_episode :{}, score : {:.1f}, n_buffer : {}, eps : {:.1f}%".format(
-                                                            i, score, memory.size(), epsilon*100))
+    if i % print_interval == 0 and i != 0:
+        print("n_episode :{}, score : {:.1f}, n_buffer : {}, eps : {:.1f}%".format(
+                                                        i, score, memory.size(), epsilon*100))
 
+        # TODO: Plot the average score using matplotlib
+        score_list.append(score)
 
 env.close()
+
+# Save trained model weights and optimizer state
+torch.save(q.state_dict(), "dqn.pth")
