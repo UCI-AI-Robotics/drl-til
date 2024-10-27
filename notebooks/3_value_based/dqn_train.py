@@ -1,8 +1,10 @@
 from matplotlib import pyplot as plt
+from collections import deque
 import gymnasium as gym
 import numpy as np
 import collections
 import random
+import time
 
 import torch
 import torch.nn as nn
@@ -110,11 +112,12 @@ target_update_interval = 20
 print_interval = 100
 epoch = 5000
 
-score_list = []
+tmp_scores = deque(maxlen=print_interval)     # deque for keeping track of scores
+avg_scores = deque(maxlen=epoch)   # average scores over every plot_every episodes
 
 for i in range(epoch):
     # epsilon = 1.0 / (i + 1)
-    epsilon = max(0.01, 0.08 - 0.01*(i/200)) #Linear annealing from 8% to 1%
+    epsilon = max(0.005, 0.08 - 0.01*(i/200)) #Linear annealing from 8% to 1%
 
     s, _ = env.reset()
     score = 0.0
@@ -128,6 +131,7 @@ for i in range(epoch):
         score += r
         s = s_prime
         if done or truncated:
+            tmp_scores.append(score)
             break
 
     if memory.size() > 2000:
@@ -137,13 +141,19 @@ for i in range(epoch):
         q_target.load_state_dict(q.state_dict())
 
     if i % print_interval == 0 and i != 0:
-        print("n_episode :{}, score : {:.1f}, n_buffer : {}, eps : {:.1f}%".format(
-                                                        i, score, memory.size(), epsilon*100))
-
-        # TODO: Plot the average score using matplotlib
-        score_list.append(score)
+        avg_score = np.mean(tmp_scores)
+        avg_scores.append(avg_score)
+        print("n_episode :{}, avg_score : {:.1f}, n_buffer : {}, eps : {:.1f}%".format(
+            i, avg_score, memory.size(), epsilon*100)
+        )
 
 env.close()
 
-# Save trained model weights and optimizer state
-torch.save(q.state_dict(), "dqn.pth")
+# Save trained model weights and optimizer state with current timestamp
+torch.save(q.state_dict(), f"dqn_{time.strftime('%Y%m%d_%H%M%S')}.pth")
+
+# plot performance
+plt.plot(np.linspace(0, epoch, len(avg_scores), endpoint=False), np.asarray(avg_scores))
+plt.xlabel('Episode Number')
+plt.ylabel('Average Reward (Over Next %d Episodes)' % print_interval)
+plt.show()
