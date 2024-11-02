@@ -69,18 +69,25 @@ class PPO(nn.Module):
             advantage_lst = []
             advantage = 0.0
             for delta_t in delta[::-1]:
-                advantage = gamma * lmbda * advantage + delta_t[0]
+                # advantage = gamma * lmbda * advantage + delta_t[0]
+                advantage = gamma * advantage + delta_t[0]
                 advantage_lst.append([advantage])
             advantage_lst.reverse()
             advantage = torch.tensor(advantage_lst, dtype=torch.float)
 
+            # # calculate future rewards
+            # discounts = torch.tensor([ gamma ** i for i in range(len(r)+1) ])
+            # discounts = discounts.unsqueeze(1)
+            # advantage = sum([a*b for a,b in zip(discounts, r)])
+
             pi = self.pi(s, softmax_dim=1)
             pi_a = pi.gather(1,a)
-            ratio = torch.exp(torch.log(pi_a) - torch.log(prob_a))  # a/b == exp(log(a)-log(b))
+            ratio = pi_a / prob_a
 
             surr1 = ratio * advantage
             surr2 = torch.clamp(ratio, 1-eps_clip, 1+eps_clip) * advantage
             loss = -torch.min(surr1, surr2) + F.smooth_l1_loss(self.v(s) , td_target.detach())
+            # loss = -torch.min(surr1, surr2)
 
             self.optimizer.zero_grad()
             loss.mean().backward()
@@ -117,7 +124,7 @@ def main():
         avg_score = np.mean(score_queue)
 
         if avg_score >= 195.0:
-            print('Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(n_epi-100, avg_score))
+            print('Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(n_epi - print_interval, avg_score))
             break
 
         if n_epi % print_interval == 0 and n_epi != 0:
@@ -127,3 +134,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Environment solved in 198 episodes!     Average Score: 198.90

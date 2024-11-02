@@ -89,10 +89,18 @@ def train_ppo(ppo_net, buffer, optimizer, rollout_length=4, epsilon=0.1, discoun
         ratios = new_p / old_p.detach()
         surrogate = torch.clamp(ratios, 1-epsilon, 1+epsilon)
 
-        # calculate future rewards
-        discounts = torch.tensor([ discount ** i for i in range(len(r)+1) ])
-        discounts = discounts.unsqueeze(1).to(device)
-        exp_r = sum([a*b for a,b in zip(discounts, r)])
+        # Calculate TD target and advantage
+        td_target = r + discount * ppo_net(s_prime) * dm
+        delta = td_target - ppo_net(s)
+        delta = delta.cpu().detach().numpy()
+
+        advantage_lst = []
+        advantage = 0.0
+        for delta_t in delta[::-1]:
+            advantage = discount * advantage + delta_t[0]
+            advantage_lst.append([advantage])
+        advantage_lst.reverse()
+        exp_r = torch.tensor(advantage_lst, dtype=torch.float).to(device)
 
         # normalize rewards
 
