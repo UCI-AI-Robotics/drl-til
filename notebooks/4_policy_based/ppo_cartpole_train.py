@@ -75,9 +75,9 @@ class PPONet(nn.Module):
 
         return action, old_prob
 
-def train_ppo(ppo_net, buffer, optimizer, epsilon=0.1, discount=0.99):
+def train_ppo(ppo_net, buffer, optimizer, rollout_length=4, epsilon=0.1, discount=0.99):
 
-    for i in range(4):
+    for i in range(rollout_length):
         s, a, r, s_prime, old_p, dm = buffer.sample()
 
         # Get new action probabilities
@@ -90,19 +90,14 @@ def train_ppo(ppo_net, buffer, optimizer, epsilon=0.1, discount=0.99):
         surrogate = torch.clamp(ratios, 1-epsilon, 1+epsilon)
 
         # calculate future rewards
-        discounts = [ discount ** i for i in range(len(r)+1) ]
+        discounts = torch.tensor([ discount ** i for i in range(len(r)+1) ])
+        discounts = discounts.unsqueeze(1).to(device)
+        exp_r = sum([a*b for a,b in zip(discounts, r)])
 
-        exp_ratios = []
-        for j, ratio in enumerate(ratios):
-            discounted_return = sum(r[j:] * discounts[:-(1+j)])
-            exp_ratios.append(ratio * discounted_return)
-
-        exp_r = torch.tensor(exp_ratios)
-
-        surrogate = torch.min(exp_r * surrogate, exp_r * ratios)
+        tensor_loss = - torch.min(exp_r * surrogate, exp_r * ratios)
 
         # optim
-        loss = -surrogate
+        loss = tensor_loss.mean()
 
         optimizer.zero_grad()
         loss.backward()
@@ -113,9 +108,11 @@ env = gym.make("CartPole-v1")
 print(f"env.action_space: {env.action_space}")
 print(f"env.observation_space: {env.observation_space}")
 
-epoch = 500
+epoch = 5000
 print_every = 100
-learning_rate = 0.01
+rollout_length = 10
+learning_rate = 0.001
+
 
 buffer = ReplayBuffer()
 ppo_net = PPONet().to(device)
@@ -141,10 +138,14 @@ for i in range(epoch):
 
     score_queue.append(score)
 
-    train_ppo(ppo_net, buffer, optimizer)
+    train_ppo(ppo_net, buffer, optimizer, rollout_length)
 
     # TODO: preformance check
-
+    avg_score = np.mean(score_queue)
     if i % print_every == 0 and i != 0:
-        avg_scores.append(np.mean(score_queue))
+        avg_scores.append(avg_score)
         print(f"Episode {i}: Average Score = {np.mean(score_queue)}")
+
+    if avg_score >= 195.0:
+        print('Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i-100, avg_score))
+        break
