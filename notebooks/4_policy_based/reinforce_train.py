@@ -120,3 +120,5 @@ plt.plot(np.linspace(0, n_episodes, len(avg_scores), endpoint=False), np.asarray
 plt.xlabel('Episode Number')
 plt.ylabel('Average Reward (Over Next %d Episodes)' % 50)
 plt.show()
+
+# Environment solved in 641 episodes!     Average Score: 195.88

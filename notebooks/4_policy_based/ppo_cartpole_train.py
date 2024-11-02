@@ -38,7 +38,7 @@ class ReplayBuffer():
             s, a, r, s_prime, old_p, dm = transition
             s_list.append(s)
             a_list.append([a])
-            r_list.append([r])
+            r_list.append([r/100.0])
             s_prime_list.append(s_prime)
             old_prob_list.append([old_p])
             done_list.append([dm])
@@ -86,7 +86,7 @@ def train_ppo(ppo_net, buffer, optimizer, rollout_length=4, epsilon=0.1, discoun
         new_p = model_output.gather(1, a)  # Get probabilities for taken actions
         
         # Calculate probability ratio
-        ratios = new_p / old_p
+        ratios = new_p / old_p.detach()
         surrogate = torch.clamp(ratios, 1-epsilon, 1+epsilon)
 
         # calculate future rewards
@@ -94,10 +94,19 @@ def train_ppo(ppo_net, buffer, optimizer, rollout_length=4, epsilon=0.1, discoun
         discounts = discounts.unsqueeze(1).to(device)
         exp_r = sum([a*b for a,b in zip(discounts, r)])
 
-        tensor_loss = - torch.min(exp_r * surrogate, exp_r * ratios)
+        # normalize rewards
+
+        tensor_loss = torch.min(exp_r * surrogate, exp_r * ratios)
+
+        # include a regularization term
+        # this steers new_policy towards 0.5
+        # prevents policy to become exactly 0 or 1 helps exploration
+        # add in 1.e-10 to avoid log(0) which gives nan
+        entropy = -(new_p*torch.log(old_p+1.e-10)+ \
+            (1.0-new_p)*torch.log(1.0-old_p+1.e-10))
 
         # optim
-        loss = tensor_loss.mean()
+        loss = - torch.mean(0.01*entropy + tensor_loss)
 
         optimizer.zero_grad()
         loss.backward()
@@ -109,10 +118,10 @@ print(f"env.action_space: {env.action_space}")
 print(f"env.observation_space: {env.observation_space}")
 
 epoch = 5000
-print_every = 100
-rollout_length = 10
-learning_rate = 0.001
-
+T_horizon = 20
+print_every = 20
+rollout_length = 3
+learning_rate = 0.0005
 
 buffer = ReplayBuffer()
 ppo_net = PPONet().to(device)
@@ -122,19 +131,22 @@ for i in range(epoch):
     
     s, _ = env.reset()
     score = 0.0
+    done = False
     score_queue, avg_scores = deque(maxlen=100), deque(maxlen=100)
 
-    while True:
-        a, old_prob = ppo_net.act( torch.from_numpy(s).float().unsqueeze(0).to(device) )
-        s_p, r, done, trunc, info = env.step(a)
-        
-        buffer.put((s, a, r, s_p, old_prob, done))
+    while not done:
+        for t in range(T_horizon):
 
-        if done or trunc:
-            break
+            a, old_prob = ppo_net.act( torch.from_numpy(s).float().unsqueeze(0).to(device) )
+            s_p, r, done, trunc, info = env.step(a)
+            
+            buffer.put((s, a, r, s_p, old_prob, done))
 
-        s = s_p
-        score += r
+            if done or trunc:
+                break
+
+            s = s_p
+            score += r
 
     score_queue.append(score)
 
