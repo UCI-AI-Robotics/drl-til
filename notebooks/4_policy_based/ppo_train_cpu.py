@@ -1,4 +1,5 @@
 import gym
+import time
 import torch
 import numpy as np
 import torch.nn as nn
@@ -131,6 +132,10 @@ def main():
             print(f"Episode {n_epi}: Average Score = {avg_score}")
 
     env.close()
+
+    # Save trained model weights and optimizer state with current timestamp
+    torch.save(model.state_dict(), f"ppo_cartpole_cpu_{time.strftime('%Y%m%d_%H%M%S')}.pth")
+
 
 if __name__ == '__main__':
     main()

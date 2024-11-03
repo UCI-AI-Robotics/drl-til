@@ -91,7 +91,7 @@ def reinforce(n_episodes=1000, max_t=1000, gamma=1.0, print_every=50):
             probs.append(-discounted_return * log_prob)
             
             # print(discounted_return, R)
-            probs.append(-log_prob * R)
+            # probs.append(-log_prob * R)
         probs_loss = torch.cat(probs).sum()
 
         optimizer.zero_grad()
