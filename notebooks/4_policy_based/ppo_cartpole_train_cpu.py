@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import time
 import torch
 import numpy as np
