@@ -20,7 +20,7 @@ class PPO(nn.Module):
     def __init__(self):
         super(PPO, self).__init__()
         self.data = []
-        
+
         self.fc1   = nn.Linear(4,256)
         self.fc_pi = nn.Linear(256,2)
         self.fc_v  = nn.Linear(256,1)
