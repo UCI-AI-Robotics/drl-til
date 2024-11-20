@@ -174,6 +174,7 @@ class PPO:
         self.score += torch.mean(reward.float()).item() / self.num_eval_freq
 
         self.action_var = torch.max(0.01 * torch.ones_like(self.action_var), self.action_var - 0.00002)
+        # print(f"self.action_var: {self.action_var}")
 
         # training mode
         if len(self.data) == self.rollout_size:
