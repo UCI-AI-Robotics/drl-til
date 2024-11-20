@@ -66,7 +66,7 @@ class PPO(nn.Module):
             td_target = r + gamma * self.v(s_prime) * done_mask
             delta = td_target - self.v(s)
             delta = delta.detach().numpy()
-
+ 
             advantage_lst = []
             advantage = 0.0
             for delta_t in delta[::-1]:
@@ -88,12 +88,12 @@ class PPO(nn.Module):
             surr1 = ratio * advantage
             surr2 = torch.clamp(ratio, 1-eps_clip, 1+eps_clip) * advantage
             loss = -torch.min(surr1, surr2) + F.smooth_l1_loss(self.v(s) , td_target.detach())
-            # loss = -torch.min(surr1, surr2)
 
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
-        
+
+
 def main():
     env = gym.make('CartPole-v1')
     model = PPO()

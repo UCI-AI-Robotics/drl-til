@@ -58,8 +58,13 @@ class PPO:
         self.lmbda = 0.95
         self.clip = 0.3
         self.rollout_size = 128
+        # two times rollout for each 128 rollout, 
+        # 1. chunk_size loop > for 32
+        # 2. mini_chunk_size loop for 4
         self.chunk_size = 32
+        # 128 // 32 = 4
         self.mini_chunk_size = self.rollout_size // self.chunk_size
+        # 512 * 4 = 2048
         self.mini_batch_size = self.args.num_envs * self.mini_chunk_size
         self.num_eval_freq = 100
 
@@ -70,6 +75,8 @@ class PPO:
 
         self.net = Net(self.env.num_obs, self.env.num_act).to(args.sim_device)
         self.action_var = torch.full((self.env.num_act,), 0.1).to(args.sim_device)
+        # print(f"self.action_var: {self.action_var}")
+        # => tensor([0.1000], device='cuda:0')
         self.optim = torch.optim.Adam(self.net.parameters(), lr=self.lr)
 
     def make_data(self):
@@ -95,6 +102,8 @@ class PPO:
             with torch.no_grad():
                 target = reward + self.gamma * self.net.v(next_obs) * done
                 delta = target - self.net.v(obs)
+            # print(f"delta: {delta[0]} / delta.shape: {delta.shape}")
+            # delta.shape: torch.Size([4, 512, 1]) => 4 times of 512x1 vector
 
             # compute advantage
             advantage_lst = []
@@ -102,12 +111,17 @@ class PPO:
             for delta_t in reversed(delta):
                 advantage = self.gamma * self.lmbda * advantage + delta_t
                 advantage_lst.insert(0, advantage)
-
             advantage = torch.stack(advantage_lst)
             log_prob = torch.stack(log_prob_lst)
 
+            # print(f"advantage.shape: {advantage.shape}")
+            # print(f"log_prob.shape: {log_prob.shape}")
+            # advantage.shape: torch.Size([4, 512, 1])
+            # log_prob.shape: torch.Size([4, 512])
+
             mini_batch = (obs, action, log_prob, target, advantage)
             data.append(mini_batch)
+        # Final dimension : 32x(4x512)
         return data
 
     def update(self):
@@ -115,6 +129,7 @@ class PPO:
         data = self.make_data()
 
         for i in range(self.epoch):
+            # len: 32
             for mini_batch in data:
                 obs, action, old_log_prob, target, advantage = mini_batch
 
@@ -123,6 +138,7 @@ class PPO:
                 dist = MultivariateNormal(mu, cov_mat)
                 log_prob = dist.log_prob(action)
 
+                # log scale subtraction for Numerical Stability
                 ratio = torch.exp(log_prob - old_log_prob).unsqueeze(-1)
 
                 surr1 = ratio * advantage
