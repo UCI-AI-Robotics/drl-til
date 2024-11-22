@@ -1,0 +1,5 @@
+# WanDB Error Log : ImportError: cannot import name 'PY311' from 'sentry_sdk._compat' 
+
+pip install --upgrade sentry-sdk
+pip install --upgrade transformers
+pip install --upgrade wandb

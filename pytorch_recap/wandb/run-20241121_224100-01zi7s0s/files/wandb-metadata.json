@@ -1,0 +1,43 @@
+{
+  "os": "Linux-6.8.0-48-generic-x86_64-with-glibc2.17",
+  "python": "3.8.20",
+  "startedAt": "2024-11-22T06:41:00.417227Z",
+  "program": "wandb_ex.py",
+  "codePath": "pytorch_recap/wandb_ex.py",
+  "git": {
+    "remote": "https://github.com/UCI-AI-Robotics/drl-til.git",
+    "commit": "5923e6939a4c0ddef98b547345fc09f84dd7a853"
+  },
+  "email": "tge1375@roadbalance.com",
+  "root": "/home/kimsooyoung/Documents/Study/drl-til/pytorch_recap",
+  "host": "kimsooyoung-IdeaPad-Gaming-3-16IAH7",
+  "username": "kimsooyoung",
+  "executable": "/home/kimsooyoung/anaconda3/envs/aloha/bin/python3",
+  "codePathLocal": "wandb_ex.py",
+  "cpu_count": 14,
+  "cpu_count_logical": 20,
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "205286293504",
+      "used": "98203860992"
+    }
+  },
+  "memory": {
+    "total": "16477990912"
+  },
+  "cpu": {
+    "count": 14,
+    "countLogical": 20
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "memoryTotal": "6442450944",
+      "cudaCores": 3840,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.2"
+}
