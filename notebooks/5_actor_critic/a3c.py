@@ -127,5 +127,6 @@ if __name__ == '__main__':
             p = mp.Process(target=train, args=(global_model, rank,))
         p.start()
         processes.append(p)
+
     for p in processes:
         p.join()
