@@ -13,6 +13,7 @@ log_dir = "logs"
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(log_dir, exist_ok=True)
 
+
 def get_model_class(algo_name):
     """Retrieve the SB3 algorithm class dynamically."""
     try:
@@ -76,14 +77,3 @@ if __name__ == '__main__':
         else:
             print(f'{args.test} not found.')
 
-    # env = gym.make(args.gymenv, render_mode="human" if args.test else None)
-
-    # if args.train:
-    #     train(env, sb3_class, args.sb3_algo)
-    # elif args.test:
-    #     if os.path.isfile(args.test):
-    #         test(env, sb3_class, args.test)
-    #     else:
-    #         print(f"Error: Model file '{args.test}' not found.")
-
-    # env.close()

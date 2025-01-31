@@ -24,9 +24,11 @@ python3 1_basic_usage.py Pendulum-v1 TD3 -t
 python3 1_basic_usage.py Pendulum-v1 PPO -t 
 python3 1_basic_usage.py Pendulum-v1 DDPG -t 
 
+
+# After ep_rew_mean converges
+python3 1_basic_usage.py Pendulum-v1 TD3 -s ./models/TD3_75000.zip
+
+
 # Check learning status
 tensorboard --logdir logs
-
-
-
 ```
