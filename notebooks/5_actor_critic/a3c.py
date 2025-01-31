@@ -14,8 +14,8 @@ n_train_processes = 5
 learning_rate = 0.0002
 update_interval = 5
 gamma = 0.98
-max_train_ep = 3000
-max_test_ep = 4000
+max_train_ep = 300
+max_test_ep = 400
 
 
 class ActorCritic(nn.Module):
@@ -72,8 +72,10 @@ def train(global_model, rank):
                 td_target_lst.append([R])
             td_target_lst.reverse()
 
-            s_batch, a_batch, td_target = torch.tensor(s_lst, dtype=torch.float), torch.tensor(a_lst), \
+            s_batch, a_batch, td_target = torch.tensor(s_lst, dtype=torch.float), \
+                torch.tensor(a_lst), \
                 torch.tensor(td_target_lst)
+                
             advantage = td_target - local_model.v(s_batch)
 
             pi = local_model.pi(s_batch, softmax_dim=1)
@@ -130,3 +132,7 @@ if __name__ == '__main__':
 
     for p in processes:
         p.join()
+
+# result
+# of episode :380, avg score : 9.3
+# of episode :380, avg score : 41.9
