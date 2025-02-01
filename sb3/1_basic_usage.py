@@ -43,6 +43,7 @@ def test(env, sb3_class, path_to_model):
     while True:
         action, _ = model.predict(obs)
         obs, _, done, _, _ = env.step(action)
+        # print(f"obs: {obs}")
 
         if done:
             extra_steps -= 1
