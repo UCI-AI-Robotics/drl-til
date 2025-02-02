@@ -5,7 +5,6 @@ import os
 import argparse
 
 import stable_baselines3
-from stable_baselines3 import SAC, TD3, A2C
 
 # Create directories to hold models and logs
 model_dir = "models"
