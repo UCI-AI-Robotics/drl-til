@@ -20,17 +20,47 @@ def get_model_class(algo_name):
     except AttributeError:
         raise ValueError(f"Invalid algorithm: {algo_name}. Available options: A2C, DDPG, DQN, PPO, SAC, TD3")
 
-def train(env, sb3_class, model_path):
+def train(env, sb3_class, algo_name, env_name):
 
-    model = sb3_class("MlpPolicy", env, verbose=1, device="cuda", tensorboard_log=log_dir)
+    os.makedirs(f"{model_dir}/{env_name}/{algo_name}", exist_ok=True)
+    os.makedirs(f"{log_dir}/{env_name}/{algo_name}", exist_ok=True)
 
-    TIMESTEPS = 25000
+    # PPO
+    # model = sb3_class(
+    #     "MlpPolicy", 
+    #     env, 
+    #     verbose=1,
+    #     gamma=0.9,
+    #     learning_rate=1e-3,
+    #     use_sde=True,
+    #     sde_sample_freq=4,
+    #     device="cuda", 
+    #     tensorboard_log=f"{log_dir}/{env_name}/{algo_name}"
+    # )
+    # TIMESTEPS = 100000
+
+    # SAC
+    model = sb3_class(
+        "MlpPolicy", 
+        env, 
+        verbose=1,
+        learning_rate=1e-3,
+        device="cuda", 
+        tensorboard_log=f"{log_dir}/{env_name}/{algo_name}"
+    )
+    TIMESTEPS = 20000
+
+    # TIMESTEPS = 25000
     iters = 0
-    while True:
-        iters += 1
 
-        model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
-        model.save(f"{model_dir}/{model_path}_{TIMESTEPS*iters}")
+    model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
+    model.save(f"{model_dir}/{env_name}/{algo_name}/{algo_name}_{TIMESTEPS*iters}")
+
+    # while True:
+    #     iters += 1
+
+    #     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
+    #     model.save(f"{model_dir}/{env_name}/{algo_name}/{algo_name}_{TIMESTEPS*iters}")
 
 def test(env, sb3_class, path_to_model):
 
@@ -68,7 +98,7 @@ if __name__ == '__main__':
 
     if args.train:
         gymenv = gym.make(args.gymenv, render_mode=None)
-        train(gymenv, sb3_class, args.sb3_algo)
+        train(gymenv, sb3_class, args.sb3_algo, args.gymenv)
 
     if(args.test):
         if os.path.isfile(args.test):
@@ -77,3 +107,11 @@ if __name__ == '__main__':
         else:
             print(f'{args.test} not found.')
 
+# python3 1_basic_usage.py Pendulum-v1 SAC -t
+# python3 1_basic_usage.py Pendulum-v1 DDPG -t
+# python3 1_basic_usage.py Pendulum-v1 PPO -t
+
+# python3 1_basic_usage.py Pendulum-v1 PPO -s ./models/Pendulum-v1/PPO/PPO_0.zip
+# python3 1_basic_usage.py Pendulum-v1 SAC -s ./models/Pendulum-v1/SAC/SAC_200000.zip
+
+# tensorboard --logdir Pendulum-v1
